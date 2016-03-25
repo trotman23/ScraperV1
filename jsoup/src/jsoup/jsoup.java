@@ -24,7 +24,7 @@ public class jsoup {
 	public static void main(String args[]){
 
 		// commenting out for testing/filling localdb
-		List<nflteam> teams = CrawlNflTeams("http://espn.go.com/nfl/standings");
+		/*List<nflteam> teams = CrawlNflTeams("http://espn.go.com/nfl/standings");
 		storeNflTeams(teams);
 		for (int i = 0; i <= 800; i+=40){
 			String url = "http://games.espn.go.com/ffl/tools/projections?&week=1&scoringPeriodId=1&seasonId=2015&startIndex=" + i;
@@ -33,7 +33,8 @@ public class jsoup {
 				storePlayer(playerList.get(j));
 			}
 		}
-		for (int l = 0; l < 17; l++){
+		*/
+		/*for (int l = 0; l < 17; l++){
 			for (int n = 0; n <= 300; n+=50){
 				try {
 					String wsUrl = "http://games.espn.go.com/ffl/leaders?&scoringPeriodId="+l+"&seasonId=2015&startIndex=" + n;
@@ -45,15 +46,15 @@ public class jsoup {
 							e.printStackTrace();;
 						}
 					}
-					Thread.sleep(5000);
+					Thread.sleep(1000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-		}
-			
+			}
 			//System.out.println("\n\n\n\n\n\n END OF WEEK " + l + " scrape \n\n\n\n\n\n ");
-		}
+		}*/
+		/*
 		List<weeklyscores> wstemp = CrawlWeeklyScores("http://games.espn.go.com/ffl/leaders?&scoringPeriodId=1&seasonId=2015", 1, 2015);
 		for(int k = 0; k < wstemp.size(); k++){
 			try {
@@ -62,10 +63,42 @@ public class jsoup {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+		}*/
+		
+		/*try {
+			String wsUrl = "http://games.espn.go.com/ffl/leaders?&scoringPeriodId=1&seasonId=2015&startIndex=0";
+			List<weeklyscores> wstemp = CrawlWeeklyScores(wsUrl, 1, 2015);
+			for(int k = 0; k < wstemp.size(); k++){
+				try{
+					storeWeeklyScores(wstemp.get(k));
+				} catch (Exception e){
+					e.printStackTrace();;
+				}
+			}
+			Thread.sleep(5000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}*/
+		
+		
+		
+		//D/ST Crawlers
+		for (int f = 1; f < 17; f++){
+			String dsturl = "http://games.espn.go.com/ffl/leaders?&scoringPeriodId=" + f + "&seasonId=2015&slotCategoryId=16";
+			List<weeklyscores>DSTList = crawlDST(dsturl, f, 2015);
 		}
+		
 		System.exit(0);
 	}
 
+	private static List<weeklyscores> crawlDST(String url, int week, int year){
+		
+		
+		
+		return null;
+	}
+	
 	private static List<nflteam> CrawlNflTeams(String url){
 
 		List<nflteam> nflteams = new ArrayList<nflteam>();
@@ -184,7 +217,6 @@ public class jsoup {
 		List<weeklyscores> wsList = new ArrayList<weeklyscores>();
 		try {
 			Document doc = Jsoup.connect(url).get();
-			//System.out.println(doc.toString());
 			Elements table = doc.select("table");
 			Elements trList = table.select("tr.pncPlayerRow");
 			int numRows = 0;
@@ -209,10 +241,12 @@ public class jsoup {
 							// now thinking of it, it's probably easier to do those from a separate page
 							//TODO: Figure out what to do with D/ST
 							try{
-								//String testing = playername.text().trim();
-								ws.Players_PlayerID = getPlayerID(playername.text().trim());
+								String testing = playername.text().trim();
+								int tempID = getPlayerID(testing);
+								System.out.println("Player name: " +testing +  "...... player id: " + tempID);
+								ws.Players_PlayerID = tempID;
 							} catch (Exception e){
-								System.out.println(e.toString() + " most likely caused by D/ST");
+								System.out.println(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!most likely caused by D/ST");
 								e.printStackTrace();
 							}
 							//there might be a better way to assign these two values
@@ -444,6 +478,7 @@ public class jsoup {
 					ws.RushingTDs + "," + 
 					ws.Receptions + "," + 
 					ws.ReceivingYards + "," + 
+					ws.ReceivingTDs + "," +
 					ws.ReceivingTargets + "," + 
 					ws.Misc2PC + "," + 
 					ws.MiscFumbles + "," + 
