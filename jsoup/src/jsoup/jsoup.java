@@ -24,16 +24,22 @@ public class jsoup {
 	public static void main(String args[]){
 
 		// commenting out for testing/filling localdb
-		/*List<nflteam> teams = CrawlNflTeams("http://espn.go.com/nfl/standings");
-		storeNflTeams(teams);
-		for (int i = 0; i <= 800; i+=40){
+		//List<nflteam> teams = CrawlNflTeams("http://espn.go.com/nfl/standings");
+		//storeNflTeams(teams);
+		/*for (int i = 0; i <= 1700; i+=40){
 			String url = "http://games.espn.go.com/ffl/tools/projections?&week=1&scoringPeriodId=1&seasonId=2015&startIndex=" + i;
 			List<players> playerList = CrawlPlayers(url);
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			for (int j = 0; j < playerList.size(); j++){
 				storePlayer(playerList.get(j));
 			}
-		}
-		 */
+		}*/
+		
 		/*for (int l = 0; l < 17; l++){
 			for (int n = 0; n <= 300; n+=50){
 				try {
@@ -91,7 +97,7 @@ public class jsoup {
 
 		System.exit(0);*/
 		//Roster Crawlers
-		for (int w = 1; w <= 17; w++){
+		/*for (int w = 1; w <= 17; w++){
 			for (int t = 1; t <= 12; t++){
 				int leagueID = 1682132;
 				int seasonID = 2015;
@@ -109,7 +115,7 @@ public class jsoup {
 					e.printStackTrace();
 				}
 			}
-		}
+		}*/
 	}
 
 	private static List<roster> crawlRoster(String url, int leagueID, int teamID, int seasonID, int weekID){
