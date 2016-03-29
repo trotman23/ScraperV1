@@ -33,7 +33,7 @@ public class jsoup {
 				storePlayer(playerList.get(j));
 			}
 		}
-		*/
+		 */
 		/*for (int l = 0; l < 17; l++){
 			for (int n = 0; n <= 300; n+=50){
 				try {
@@ -64,7 +64,7 @@ public class jsoup {
 				e.printStackTrace();
 			}
 		}*/
-		
+
 		/*try {
 			String wsUrl = "http://games.espn.go.com/ffl/leaders?&scoringPeriodId=1&seasonId=2015&startIndex=0";
 			List<weeklyscores> wstemp = CrawlWeeklyScores(wsUrl, 1, 2015);
@@ -80,25 +80,238 @@ public class jsoup {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}*/
-		
-		
-		
+
+
+
 		//D/ST Crawlers
-		for (int f = 1; f < 17; f++){
+		/*for (int f = 1; f < 17; f++){
 			String dsturl = "http://games.espn.go.com/ffl/leaders?&scoringPeriodId=" + f + "&seasonId=2015&slotCategoryId=16";
-			List<weeklyscores>DSTList = crawlDST(dsturl, f, 2015);
+			crawlDST(dsturl, f, 2015);
 		}
-		
-		System.exit(0);
+
+		System.exit(0);*/
+		//Roster Crawlers
+		for (int w = 1; w <= 17; w++){
+			for (int t = 1; t <= 12; t++){
+				int leagueID = 1682132;
+				int seasonID = 2015;
+				String url = "http://games.espn.go.com/ffl/boxscorequick?leagueId=" + leagueID +"&teamId="+ t + 
+						"&scoringPeriodId=" + w + "&seasonId=" + seasonID + "&view=scoringperiod&version=quick"; 
+				List<roster> lr = crawlRoster(url, leagueID, t, seasonID, w);
+				System.out.println(lr.toString());
+				for (int r = 0; r < lr.size(); r++){
+					storeRoster(lr.get(r));
+				}
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
 	}
 
-	private static List<weeklyscores> crawlDST(String url, int week, int year){
-		
-		
-		
-		return null;
+	private static List<roster> crawlRoster(String url, int leagueID, int teamID, int seasonID, int weekID){
+		List<roster> lr = new ArrayList<roster>();
+		try {
+			Document doc = Jsoup.connect(url).get();
+			Elements table = doc.select("table.tableBody");
+			
+			for (int h = 0; h < table.size(); h ++){
+				// h=0,2 for the current teams data, 1,3 for the opponents data , which we grab later in this process. 
+				if(h == 0 || h == 1){
+					System.out.println(table.get(h).text());
+					Elements trList = table.get(h).select("tr.pncPlayerRow");
+					int numRows = 0;
+					int numCols = 0;
+
+					for (int i = 0; i < trList.size(); i++){
+						Element row = trList.get(i);
+						Elements cols = row.children();
+						roster r = new roster();
+						r.Teams_Leagues_LeagueID = leagueID;
+						r.WeekID = weekID;
+						r.Teams_FFATeamID = teamID;
+						r.SeasonID = seasonID;
+						r.Teams_Users_UserID = teamID;
+						NflTeamNicknames nn = new NflTeamNicknames();
+						int colsize = cols.size();
+						for (int j = 0; j < cols.size(); j++){
+							if (j == 0){
+								if (cols.get(j).text().equals("Bench")){
+									r.Starter = false;
+									r.Slot = "Bench";
+								} else if (cols.get(j).text().equals("IR")){
+									r.Starter = false;
+									r.Slot = "IR";
+								} else {
+									r.Starter = true;
+									r.Slot = cols.get(j).text();
+								}
+								if (cols.get(j).text().equals("D/ST")){
+									//handle what to do with D/ST need to come up with a good strategy for this
+									break;
+								}
+							}
+							if (j == 1){
+								String pname = cols.get(j).select("a").text();
+								System.out.println(pname);
+								int pid = getPlayerID(pname);
+								System.out.println(pid);
+								r.Players_PlayerID = pid;
+								String[] sps = cols.get(j).text().split("\\p{Z}");
+								if (sps.length > 4){
+									String tempInj = null;
+									try{
+										tempInj = sps[sps.length - 1];
+									} catch (Exception e){
+										//do nothing, array index out of bounds
+									}
+									
+									if (tempInj != null){
+										r.InjuryCode = tempInj;
+									} else {
+										r.InjuryCode = "N";
+									}
+								} else {
+									r.InjuryCode = "N";
+								}
+							}
+							numCols++;
+						}
+						//dstlist.add(ws);
+						//System.out.println(p.toString());
+						numCols = 0;
+						numRows++;
+						//System.out.println("################################################################");
+						//pList.add(p);
+						
+						//finaly add out player to the list of players lr
+						lr.add(r);
+					}
+					
+				} else {
+					//do nothing, we're looking at the opponents roster lineup for that week
+				};
+				
+			}
+			//while ()
+			//System.out.println(teamList.toString());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return lr;
 	}
-	
+
+	private static void storeRoster(roster r){
+		Connection conn = null;
+		Statement stmt = null;
+		try{
+			Class.forName("com.mysql.jdbc.Driver");
+			System.out.println("Connecting to database...");
+			conn = DriverManager.getConnection(DB_URL,USER,PASS);
+
+			System.out.println("Creating statement...");
+			stmt = conn.createStatement();
+			//buil query
+			String sql = "";
+			/*
+			 * java's string.format method is a not nice, i'm just going to do it manually
+			 * sql += "INSERT INTO players VALUES " + String.format("(%1$i,'%2$s','%3$s','%4$s',%5$b,%6$i);",
+					players.PlayerID,
+					players.Name,
+					players.Position,
+					players.NFLTeamName,
+					players.Injured,
+					players.NFLTeam_NFLTeamID
+					);*/
+			sql += "INSERT INTO roster VALUES (" +
+					r.Players_PlayerID + "," + 
+					r.Teams_FFATeamID + "," + 
+					r.Teams_Users_UserID + "," +
+					r.Teams_Leagues_LeagueID + "," +
+					"'" + r.InjuryCode + "'," +
+					"'" + r.Slot + "'," +
+					r.WeekID + "," +
+					r.Starter + "," +
+					r.SeasonID + ");";
+			System.out.println(sql);
+			stmt.executeUpdate(sql);
+			//close up
+			stmt.close();
+			conn.close();
+		}catch(Exception e){
+			//Handle errors for JDBC
+			e.printStackTrace();
+		}
+	}
+	private static void crawlDST(String url, int week, int year){
+		/*List<players> dstlist = new ArrayList<players>();
+		List<weeklyscores> wslist = new ArrayList<weeklyscores>();
+		try {
+			Document doc = Jsoup.connect(url).get();
+			Elements table = doc.select("table");
+			Elements trList = table.select("tr.pncPlayerRow");
+			int numRows = 0;
+			int numCols = 0;
+
+			for (int i = 0; i < trList.size(); i++){
+				Element row = trList.get(i);
+				Elements cols = row.children();
+				weeklyscores ws = new weeklyscores();
+				NflTeamNicknames nn = new NflTeamNicknames();
+				players p = new players();
+				boolean isPlayer = false;
+				int colsize = cols.size();
+				for (int j = 0; j < cols.size(); j++){
+					if (j == 0){
+						Element playername = cols.get(0).select("a.flexpop").first();
+						if (playername != null){
+							//there might be a better way to assign these two values
+							ws.Week = week;
+							ws.Season = year;
+							//System.out.println(cols.text());
+						}
+					}
+					try {
+						if(isPlayer){
+							//should really switch this to case:break but w/e
+							//System.out.println("j =" + j + "   value= " + cols.get(j).text());
+							if (j == 21){
+								ws.MiscTDs = Integer.parseInt(cols.get(j).text());
+							}
+							if (j == 23){
+								ws.FantasyPointsScored = Double.parseDouble(cols.get(j).text());
+							}
+						}
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					numCols++;
+
+				}
+				//dstlist.add(ws);
+				//System.out.println(p.toString());
+				numCols = 0;
+				numRows++;
+				//System.out.println("################################################################");
+				//pList.add(p);
+			}
+			for (int o = 0; o < pList.size(); o++){
+				System.out.println(pList.get(o).toString());
+			}
+			//while ()
+			//System.out.println(teamList.toString());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		 */
+	}
+
 	private static List<nflteam> CrawlNflTeams(String url){
 
 		List<nflteam> nflteams = new ArrayList<nflteam>();
@@ -156,7 +369,7 @@ public class jsoup {
 	private static List<players> CrawlPlayers(String url){
 
 		List<players> pList = new ArrayList<players>();
-		
+
 		try {
 			Document doc = Jsoup.connect(url).get();
 			//System.out.println(doc.toString());
@@ -255,7 +468,7 @@ public class jsoup {
 							//System.out.println(cols.text());
 						}
 					}
-					
+
 					try {
 						if(isPlayer){
 							//should really switch this to case:break but w/e
@@ -335,7 +548,7 @@ public class jsoup {
 		return wsList;
 	}
 	public static void CrawlLeague(String url, int LeagueID){
-		
+
 	}
 	//method to grab nflteamid from the nfl table based on the full nfl team name
 	private static int getNFLTeamID(String teamNameFull){
@@ -358,7 +571,7 @@ public class jsoup {
 			if (id > 0){
 				return id;
 			} else return 0;
-		
+
 		} catch (Exception e){
 			e.printStackTrace();
 
@@ -414,7 +627,7 @@ public class jsoup {
 		}
 	}
 	private static void storePlayer(players p){
-		
+
 		Connection conn = null;
 		Statement stmt = null;
 		try{
@@ -485,8 +698,8 @@ public class jsoup {
 					ws.MiscTDs + "," + 
 					ws.FantasyPointsScored + "," + 
 					ws.Players_PlayerID + ");"; 
-					
-					
+
+
 			System.out.println(sql);
 			stmt.executeUpdate(sql);
 			//close up
@@ -499,9 +712,13 @@ public class jsoup {
 			conn.close();
 			stmt.close();
 		}
-		
+
 	}
-	
+
+	private static void storeDST(weeklyscores ws, players p ){
+
+
+	}
 	//gets the player ID from the players table given the player name in string form
 	private static int getPlayerID(String name){
 		//this and getNFLTeamID can probably be combined to one method, but don't want to do it right now
@@ -515,7 +732,7 @@ public class jsoup {
 			pConn = DriverManager.getConnection(DB_URL,USER,PASS);
 			pStmt = pConn.createStatement();
 			//select on team name, given team id
-			
+
 			String sql = "SELECT PlayerID FROM players WHERE Name = '" + name + "';";
 			System.out.println(sql);
 			ResultSet rs = pStmt.executeQuery("SELECT PlayerID FROM players WHERE Name = '" + name + "';");
@@ -528,7 +745,7 @@ public class jsoup {
 			if (id > 0){
 				return id;
 			} else return 0;
-		
+
 		} catch (Exception e){
 			e.printStackTrace();
 
@@ -537,5 +754,5 @@ public class jsoup {
 
 		}
 	}
-	
+
 }
