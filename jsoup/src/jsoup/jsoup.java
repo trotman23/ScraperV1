@@ -14,14 +14,44 @@ public class jsoup {
 
 	// djdbc driver name and database
 	static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";  
-	static final String DB_URL = "jdbc:mysql://localhost/ffadb";
+	static final String DB_URL = "jdbc:mysql://aaxd0xqcmiqmgi.c0fxx6pghrju.us-west-2.rds.amazonaws.com/ffadb";
 
 	//  Database credentials
-	static final String USER = "root";
+	static final String USER = "master";
 	static final String PASS = "eric2mad";
 
 
 	public static void main(String args[]){
+		
+		
+		//testing for api
+		/*Connection pConn = null;
+		Statement pStmt = null;
+		try{
+			int id = 1;
+			Class.forName("com.mysql.jdbc.Driver");
+			pConn = DriverManager.getConnection(DB_URL,USER,PASS);
+			pStmt = pConn.createStatement();
+			//select on team name, given team id
+
+			String sql = "SELECT * FROM nflteam WHERE NFLTeamID = " + id + ";";
+			System.out.println(sql);
+			ResultSet rs = pStmt.executeQuery(sql);
+			System.out.println(rs.toString());
+			while(rs.next()){
+				String name = rs.getString(2);
+				int wins = rs.getInt(3);
+				int loss = rs.getInt(4);
+				int ties = rs.getInt(5);
+			}
+			pConn.close();
+			rs.close();
+
+		} catch (Exception e){
+			e.printStackTrace();
+		} finally{
+
+		}*/
 
 		// commenting out for testing/filling localdb
 		//List<nflteam> teams = CrawlNflTeams("http://espn.go.com/nfl/standings");
@@ -60,16 +90,6 @@ public class jsoup {
 			}
 			//System.out.println("\n\n\n\n\n\n END OF WEEK " + l + " scrape \n\n\n\n\n\n ");
 		}*/
-		/*
-		List<weeklyscores> wstemp = CrawlWeeklyScores("http://games.espn.go.com/ffl/leaders?&scoringPeriodId=1&seasonId=2015", 1, 2015);
-		for(int k = 0; k < wstemp.size(); k++){
-			try {
-				storeWeeklyScores(wstemp.get(k));
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}*/
 
 		/*try {
 			String wsUrl = "http://games.espn.go.com/ffl/leaders?&scoringPeriodId=1&seasonId=2015&startIndex=0";
@@ -97,9 +117,9 @@ public class jsoup {
 
 		System.exit(0);*/
 		//Roster Crawlers
-		/*for (int w = 1; w <= 17; w++){
+		for (int w = 1; w <= 17; w++){
 			for (int t = 1; t <= 12; t++){
-				int leagueID = 1682132;
+				int leagueID = 1124587;
 				int seasonID = 2015;
 				String url = "http://games.espn.go.com/ffl/boxscorequick?leagueId=" + leagueID +"&teamId="+ t + 
 						"&scoringPeriodId=" + w + "&seasonId=" + seasonID + "&view=scoringperiod&version=quick"; 
@@ -115,7 +135,7 @@ public class jsoup {
 					e.printStackTrace();
 				}
 			}
-		}*/
+		}
 	}
 
 	private static List<roster> crawlRoster(String url, int leagueID, int teamID, int seasonID, int weekID){
