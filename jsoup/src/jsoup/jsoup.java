@@ -56,19 +56,24 @@ public class jsoup {
 		// commenting out for testing/filling localdb
 		//List<nflteam> teams = CrawlNflTeams("http://espn.go.com/nfl/standings");
 		//storeNflTeams(teams);
-		/*for (int i = 0; i <= 1700; i+=40){
-			String url = "http://games.espn.go.com/ffl/tools/projections?&week=1&scoringPeriodId=1&seasonId=2015&startIndex=" + i;
-			List<players> playerList = CrawlPlayers(url);
+		List<players> playerList = null;
+		for (int i = 0; i <= 1700; i+=40){
+			int leagueID = 1041604;
+			int seasonID = 2015;
+			String url = "http://games.espn.go.com/ffl/tools/projections?leagueId=" + leagueID + "&seasonTotals=true&seasonId=" + seasonID + "&startIndex=" + i;
+//			String url = "http://games.espn.go.com/ffl/tools/projections?&week=1&scoringPeriodId=1&seasonId=2015&startIndex=" + i;
+			playerList = CrawlPlayers(url);
 			try {
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			for (int j = 0; j < playerList.size(); j++){
-				storePlayer(playerList.get(j));
-			}
-		}*/
+		}
+		
+//		for (int j = 0; j < playerList.size(); j++){
+//			storePlayer(playerList.get(j));
+//		}
 		
 		/*for (int l = 0; l < 17; l++){
 			for (int n = 0; n <= 300; n+=50){
@@ -117,25 +122,37 @@ public class jsoup {
 
 		System.exit(0);*/
 		//Roster Crawlers
-		for (int w = 1; w <= 17; w++){
-			for (int t = 1; t <= 12; t++){
-				int leagueID = 1124587;
-				int seasonID = 2015;
-				String url = "http://games.espn.go.com/ffl/boxscorequick?leagueId=" + leagueID +"&teamId="+ t + 
-						"&scoringPeriodId=" + w + "&seasonId=" + seasonID + "&view=scoringperiod&version=quick"; 
-				List<roster> lr = crawlRoster(url, leagueID, t, seasonID, w);
-				System.out.println(lr.toString());
-				for (int r = 0; r < lr.size(); r++){
-					storeRoster(lr.get(r));
-				}
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		}
+//		for (int w = 1; w <= 17; w++){
+//			for (int t = 1; t <= 12; t++){
+//				int leagueID = 1124587;
+//				int seasonID = 2015;
+//				String url = "http://games.espn.go.com/ffl/boxscorequick?leagueId=" + leagueID +"&teamId="+ t + 
+//						"&scoringPeriodId=" + w + "&seasonId=" + seasonID + "&view=scoringperiod&version=quick"; 
+//				List<roster> lr = crawlRoster(url, leagueID, t, seasonID, w);
+//				System.out.println(lr.toString());
+//				for (int r = 0; r < lr.size(); r++){
+//					storeRoster(lr.get(r));
+//				}
+//				try {
+//					Thread.sleep(1000);
+//				} catch (InterruptedException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			}
+//		}
+		
+		//crawl player rankings
+//		for (int y = 0; y<=17; y++){
+//			for (int x = 0; x <=1200; x+= 40){
+//				int leagueID = 1041604;
+//				int seasonID = 2015;
+//				String url = "http://games.espn.go.com/ffl/tools/projections?leagueId=" + leagueID + "&seasonTotals=true&seasonId=" + seasonID + "&startIndex=" + x;
+//				
+//				CrawlPlayerRankings(url);
+//				
+//			}
+		//}
 	}
 
 	private static List<roster> crawlRoster(String url, int leagueID, int teamID, int seasonID, int weekID){
@@ -404,16 +421,16 @@ public class jsoup {
 			int numRows = 0;
 			int numCols = 0;
 
-			for (int i = 0; i < trList.size(); i++){
+			for (int i = 3; i < trList.size(); i++){
 				Element row = trList.get(i);
 				Elements cols = row.children();
 				players p = new players();
-				//weeklyscores ws = new weeklyscores();
 				NflTeamNicknames nn = new NflTeamNicknames();
-				//might not need this, but we'll see, link between the tables. i don't know how the
-				//java hash lookup functions works on non-primitive object types
-				//Map<players, weeklyscores> map = new HashMap<players, weeklyscores>();
 				boolean isPlayer = false;
+				
+				Element rank = cols.get(0).select("td.playertableData").first();
+				System.out.print(rank.text() + ". ");
+				
 				for (int j = 0; j < cols.size(); j++){
 
 					Element playername = cols.get(j).select("td.playertablePlayerName").first();
@@ -424,16 +441,22 @@ public class jsoup {
 						if (rName.length <= 1){
 							break;
 						}
-						p.Name= rName[0];
+						//remove all hypens, periods, apastrophe's etc. from names
+						String playerName = rName[0];
+						playerName = playerName.replaceAll("[()\\-\\'\\.\\*]", "").trim();
+						p.Name= playerName;
+						System.out.println(playerName);
 						String fuck = rName[1].trim();
 						String[] extra = rName[1].split("\\p{Z}");
 						p.NFLTeamName = nn.nicknames.get(extra[1]);
 						p.Position = extra[2];
 						p.Injured = false;
 						p.NFLTeam_NFLTeamID = getNFLTeamID(p.NFLTeamName);
-						//using java hashcode for playerid right now, can change in the future but
-						// idk what else to use. thought it was a good idea
+						p.OverallRank = rank.text();
+						//hash player name for playerID
 						p.PlayerID = Math.abs(p.Name.hashCode());
+						//store immediately
+						storePlayer(p);
 					}
 					//System.out.println("----------------------------------------");
 					numCols++;
@@ -452,6 +475,87 @@ public class jsoup {
 		return pList;
 
 	}
+	
+	private static List<players> CrawlPlayerRankings(String url){
+
+		List<players> pList = new ArrayList<players>();
+
+		try {
+			Document doc = Jsoup.connect(url).get();
+
+			Elements table = doc.select("table");
+			Elements trList = table.select("tr");
+			int numRows = 0;
+			int numCols = 0;
+
+			for (int i = 3; i < 4; i++){
+				Element row = trList.get(i);
+				Elements cols = row.children();
+				players p = new players();
+				boolean isPlayer = false;
+				
+				Element rank = cols.get(0).select("td.playertableData").first();
+				System.out.print(rank.text() + ". ");
+	
+				for (int j = 0; j < cols.size(); j++){
+					
+					Element player = cols.get(j).select("td.playertablePlayerName").first();
+					if (player != null){
+						String[] rName = player.text().split(",");	
+						if (rName.length <= 1){
+							break;
+						}
+						String playerName = rName[0];
+						playerName = playerName.replaceAll("[()\\-\\']", "").trim();
+						System.out.println(playerName);
+						int playerID = Math.abs(playerName.hashCode());
+						
+						//insert ranking into database
+						Connection conn = null;
+						Statement stmt = null;
+
+						try{
+							//STEP 2: Register JDBC driver
+							Class.forName("com.mysql.jdbc.Driver");
+
+							//STEP 3: Open a connection
+							System.out.println("Connecting to database...");
+							conn = DriverManager.getConnection(DB_URL,USER,PASS);
+
+							//STEP 4: Execute a query
+							System.out.println("Creating statement...");
+							stmt = conn.createStatement();
+							String sql = "";
+							
+							sql += "UPDATE players SET OverallRank = " + rank.text()+ " WHERE playerID = " + playerID;;
+
+							System.out.println(sql);
+							stmt.executeUpdate(sql);
+							//rs.close();
+							System.out.println("finished updating player rankings");
+							stmt.close();
+							conn.close();
+						}catch(Exception e){
+							//Handle errors for JDBC
+							e.printStackTrace();
+						}
+						
+					}
+					numCols++;
+
+				}
+				numCols = 0;
+				numRows++;
+				pList.add(p);
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return pList;
+
+	}
+	
 	private static List<weeklyscores> CrawlWeeklyScores(String url, int week, int season){
 		List<weeklyscores> wsList = new ArrayList<weeklyscores>();
 		try {
@@ -587,7 +691,7 @@ public class jsoup {
 			nConn = DriverManager.getConnection(DB_URL,USER,PASS);
 			nStmt = nConn.createStatement();
 			//select on team name, given team id
-			ResultSet rs = nStmt.executeQuery("SELECT NFLTeamID FROM NFLTeam WHERE NFLTeamName = '" + teamNameFull + "';");
+			ResultSet rs = nStmt.executeQuery("SELECT NFLTeamID FROM nflteam WHERE NFLTeamName = '" + teamNameFull + "';");
 			int id = -1;
 			while(rs.next()){
 				id = rs.getInt("NFLTeamID");
@@ -665,23 +769,15 @@ public class jsoup {
 			stmt = conn.createStatement();
 			//buil query
 			String sql = "";
-			/*
-			 * java's string.format method is a not nice, i'm just going to do it manually
-			 * sql += "INSERT INTO players VALUES " + String.format("(%1$i,'%2$s','%3$s','%4$s',%5$b,%6$i);",
-					players.PlayerID,
-					players.Name,
-					players.Position,
-					players.NFLTeamName,
-					players.Injured,
-					players.NFLTeam_NFLTeamID
-					);*/
-			sql += "INSERT INTO players VALUES (" +
+
+			sql += "INSERT INTO players2 VALUES (" + //updates if playerID key already exists
 					p.PlayerID + "," + 
 					"'" + p.Name + "'," + 
 					"'" + p.Position + "'," +
 					"'" + p.NFLTeamName + "'," +
 					p.Injured + "," +
-					p.NFLTeam_NFLTeamID + ");";
+					p.NFLTeam_NFLTeamID + "," +
+					"'" + p.OverallRank + "');"; //added by Dylan
 			System.out.println(sql);
 			stmt.executeUpdate(sql);
 			//close up

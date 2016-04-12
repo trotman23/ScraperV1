@@ -3,6 +3,7 @@ package jsoup;
 public class players {
 
 	public int PlayerID;
+	public String OverallRank;
 	public String Name;
 	public String Position;
 	public String NFLTeamName;
